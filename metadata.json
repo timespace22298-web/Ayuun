@@ -1,0 +1,7 @@
+{
+  "name": "팀허브(Team-Hub): 대한민국 최고의 출퇴근 관리 시스템",
+  "description": "대한민국 팀원 10명을 위한 가장 아름답고 기능적인 인터랙티브 출퇴근 관리 플랫폼입니다. Gemini AI를 통한 팀 분위기 분석과 반응형 디자인을 제공합니다.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

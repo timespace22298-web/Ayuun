@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team-Hub | 대한민국 최고의 출퇴근 관리 시스템</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pretendard Variable Font -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="stylesheet" href="./index.css" />
+
+    <!-- Babel Standalone for JSX/TSX support in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Import Map for Modules -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "@google/genai": "https://esm.sh/@google/genai@1.38.0"
+      }
+    }
+    </script>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <!-- Main Application Script -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useCallback } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { GoogleGenAI } from "@google/genai";
+
+        // --- Types & Constants ---
+
+        const AttendanceStatus = {
+            AT_WORK: '업무중',
+            AWAY: '자리비움',
+            OFF: '퇴근/미출근', // Updated text
+            BREAK: '휴식중'
+        };
+
+        const INITIAL_MEMBERS = [
+            { id: 1, name: '김민준', role: '프론트엔드 리드', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p1/200/200', records: {} },
+            { id: 2, name: '이서연', role: 'UI/UX 디자이너', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p2/200/200', records: {} },
+            { id: 3, name: '박지훈', role: '백엔드 엔지니어', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p3/200/200', records: {} },
+            { id: 4, name: '최윤서', role: '프로덕트 매니저', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p4/200/200', records: {} },
+            { id: 5, name: '정현우', role: 'QA 엔지니어', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p5/200/200', records: {} },
+            { id: 6, name: '강지혜', role: '마케팅 리드', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p6/200/200', records: {} },
+            { id: 7, name: '조민지', role: '데이터 분석가', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p7/200/200', records: {} },
+            { id: 8, name: '윤도현', role: 'DevOps 엔지니어', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p8/200/200', records: {} },
+            { id: 9, name: '임재혁', role: '모바일 개발자', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p9/200/200', records: {} },
+            { id: 10, name: '한소희', role: '브랜드 디자이너', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p10/200/200', records: {} },
+        ];
+
+        // --- Services ---
+
+        // API Key handling for Browser environment
+        // NOTE: In a real environment, this should be handled securely.
+        const API_KEY = "";
+
+        const getTeamInsight = async (members) => {
+            if (!API_KEY) {
+                // Return mock data if no key
+                return {
+                    summary: "팀원들이 각자의 위치에서 최선을 다하고 있습니다.",
+                    mood: "차분하고 집중력 있는 분위기",
+                    tip: "잠시 스트레칭을 하며 눈의 피로를 풀어보세요."
+                };
+            }
+
+            const ai = new GoogleGenAI({ apiKey: API_KEY });
+            const atWorkCount = members.filter(m => m.status !== AttendanceStatus.OFF).length;
+            const prompt = `현재 팀원 10명 중 ${atWorkCount}명이 근무 중입니다. 
+            전체 팀원의 역할은 프론트엔드, 디자인, 백엔드 등 다양합니다. 
+            이 상황에 어울리는 한국어 팀 요약 정보와 분위기, 그리고 오늘의 팁을 JSON 형식으로 작성해줘. 
+            따뜻하고 격려하는 어조를 사용해줘.`;
+
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.0-flash',
+                    contents: prompt,
+                    config: {
+                        responseMimeType: "application/json"
+                    }
+                });
+                return JSON.parse(response.text.trim());
+            } catch (error) {
+                console.error("Gemini Insight Error:", error);
+                return {
+                    summary: "팀원들이 각자의 위치에서 최선을 다하고 있습니다.",
+                    mood: "차분하고 집중력 있는 분위기",
+                    tip: "잠시 스트레칭을 하며 눈의 피로를 풀어보세요."
+                };
+            }
+        };
+
+        // --- Components ---
+
+        const Clock = () => {
+            const [time, setTime] = useState(new Date());
+
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="flex flex-col items-end">
+                    <div className="text-3xl md:text-4xl font-bold tracking-tight tabular-nums text-slate-900">
+                        {time.toLocaleTimeString('ko-KR', { hour12: false })}
+                    </div>
+                    <div className="text-sm text-slate-500 font-medium">
+                        {time.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+                    </div>
+                </div>
+            );
+        };
+
+        const MemberCard = ({ member, onStatusChange }) => {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case AttendanceStatus.AT_WORK: return 'bg-emerald-500';
+                    case AttendanceStatus.AWAY: return 'bg-amber-500';
+                    case AttendanceStatus.BREAK: return 'bg-sky-500';
+                    case AttendanceStatus.OFF: return 'bg-slate-300';
+                    default: return 'bg-slate-300';
+                }
+            };
+
+            const getStatusTextClass = (status) => {
+                switch (status) {
+                    case AttendanceStatus.AT_WORK: return 'text-emerald-700 bg-emerald-50';
+                    case AttendanceStatus.AWAY: return 'text-amber-700 bg-amber-50';
+                    case AttendanceStatus.BREAK: return 'text-sky-700 bg-sky-50';
+                    case AttendanceStatus.OFF: return 'text-slate-500 bg-slate-50';
+                    default: return 'text-slate-500 bg-slate-50';
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <img src={member.avatar} alt={member.name} className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-50" />
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`}></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-slate-900 truncate">{member.name}</h3>
+                            <p className="text-xs text-slate-500 truncate">{member.role}</p>
+                        </div>
+                        <div className={`px-2 py-1 rounded-md text-xs font-semibold ${getStatusTextClass(member.status)}`}>
+                            {member.status}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                        <button
+                            onClick={() => onStatusChange(member.id, AttendanceStatus.AT_WORK)}
+                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors font-medium"
+                        >
+                            출근
+                        </button>
+                        <button
+                            onClick={() => onStatusChange(member.id, AttendanceStatus.OFF)}
+                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors font-medium"
+                        >
+                            퇴근
+                        </button>
+                        <button
+                            onClick={() => onStatusChange(member.id, AttendanceStatus.AWAY)}
+                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-colors font-medium"
+                        >
+                            외출
+                        </button>
+                        <button
+                            onClick={() => onStatusChange(member.id, AttendanceStatus.BREAK)}
+                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-sky-500 hover:text-white hover:border-sky-500 transition-colors font-medium"
+                        >
+                            휴식
+                        </button>
+                    </div>
+
+                    {member.records.checkIn && (
+                        <div className="text-[10px] text-slate-400 text-center border-t pt-2 mt-1">
+                            최근 체크인: {member.records.checkIn}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- Main App ---
+
+        const App = () => {
+            const [members, setMembers] = useState(() => {
+                const saved = localStorage.getItem('team-attendance');
+                return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+            });
+
+            const [insight, setInsight] = useState(null);
+            const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+
+            useEffect(() => {
+                localStorage.setItem('team-attendance', JSON.stringify(members));
+            }, [members]);
+
+            const fetchInsight = useCallback(async () => {
+                setIsLoadingInsight(true);
+                const result = await getTeamInsight(members);
+                setInsight(result);
+                setIsLoadingInsight(false);
+            }, [members]);
+
+            useEffect(() => {
+                fetchInsight();
+            }, []);
+
+            const handleStatusChange = (id, newStatus) => {
+                setMembers(prev => prev.map(m => {
+                    if (m.id === id) {
+                        const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                        return {
+                            ...m,
+                            status: newStatus,
+                            records: {
+                                ...m.records,
+                                checkIn: newStatus === AttendanceStatus.AT_WORK ? now : m.records.checkIn,
+                                checkOut: newStatus === AttendanceStatus.OFF ? now : m.records.checkOut
+                            }
+                        };
+                    }
+                    return m;
+                }));
+            };
+
+            const totalAtWork = members.filter(m => m.status === AttendanceStatus.AT_WORK).length;
+            const totalAway = members.filter(m => m.status === AttendanceStatus.AWAY || m.status === AttendanceStatus.BREAK).length;
+
+            return (
+                <div className="min-h-screen bg-slate-50 pb-12 transition-all">
+                    <header className="sticky top-0 z-10 glass-morphism border-b border-slate-200 px-6 py-4 mb-8">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Team-Hub</h1>
+                                    <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest">Attendance System</p>
+                                </div>
+                            </div>
+                            <Clock />
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-6 space-y-8">
+                        {/* Status Summary */}
+                        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <p className="text-slate-500 text-sm font-medium mb-1">근무 중인 팀원</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-3xl font-black text-emerald-600">{totalAtWork}</span>
+                                    <span className="text-slate-400 mb-1 font-medium">/ 10명</span>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <p className="text-slate-500 text-sm font-medium mb-1">자리비움/휴식</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-3xl font-black text-amber-500">{totalAway}</span>
+                                    <span className="text-slate-400 mb-1 font-medium">명</span>
+                                </div>
+                            </div>
+
+                            {/* AI Insight Box */}
+                            <div className="col-span-1 sm:col-span-2 bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a1 1 0 112 0v1a1 1 0 11-2 0zM13.536 14.95a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 011.414-1.414l.707.707zM16.464 16.464a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707z" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-xs font-bold uppercase tracking-wider opacity-80">AI 팀 인사이트</span>
+                                        </div>
+                                        <button
+                                            onClick={fetchInsight}
+                                            disabled={isLoadingInsight}
+                                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isLoadingInsight ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    {insight ? (
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                                            <p className="text-sm font-bold leading-tight">{insight.summary}</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-medium">{insight.mood}</span>
+                                                <p className="text-xs opacity-90 italic">"{insight.tip}"</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm opacity-60">오늘의 팀 분위기를 분석하는 중입니다...</p>
+                                    )}
+                                </div>
+                                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+                            </div>
+                        </section>
+
+                        {/* Members Grid */}
+                        <section>
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">팀원 근무 현황</h2>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Real-time status</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                                {members.map(member => (
+                                    <MemberCard
+                                        key={member.id}
+                                        member={member}
+                                        onStatusChange={handleStatusChange}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    </main>
+
+                    <footer className="mt-20 border-t border-slate-200 pt-8 pb-12 text-center px-6">
+                        <p className="text-slate-400 text-sm font-medium">© 2024 Team-Hub Korea. Designed for the most beautiful 10 people.</p>
+                        <p className="text-slate-300 text-xs mt-1">Responsive Interface • Gemini AI Engine • Web Standard Compliant</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
