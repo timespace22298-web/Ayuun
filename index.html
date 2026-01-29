@@ -41,7 +41,7 @@
         const AttendanceStatus = {
             AT_WORK: '업무중',
             AWAY: '자리비움',
-            OFF: '퇴근/미출근', // Updated text
+            OFF: '퇴근/미출근',
             BREAK: '휴식중'
         };
 
@@ -54,8 +54,8 @@
             { id: 6, name: '강지혜', role: '마케팅 리드', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p6/200/200', records: {} },
             { id: 7, name: '조민지', role: '데이터 분석가', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p7/200/200', records: {} },
             { id: 8, name: '윤도현', role: 'DevOps 엔지니어', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p8/200/200', records: {} },
-            { id: 9, name: '임재혁', role: '모바일 개발자', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p9/200/200', records: {} },
-            { id: 10, name: '한소희', role: '브랜드 디자이너', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p10/200/200', records: {} },
+            { id: 9, name: '남궁민수', role: '모바일 개발자', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p9/200/200', records: {} },
+            { id: 10, name: '황보하나', role: '브랜드 디자이너', status: AttendanceStatus.OFF, avatar: 'https://picsum.photos/seed/p10/200/200', records: {} },
         ];
 
         // --- Services ---
@@ -122,6 +122,83 @@
             );
         };
 
+        // StatsTable Component
+        const StatsTable = () => {
+            const [activeTab, setActiveTab] = useState('weekly'); // 'weekly' or 'monthly'
+
+            // Mock Data Generator
+            const generateData = (type) => {
+                return INITIAL_MEMBERS.map((m, i) => ({
+                    rank: i + 1,
+                    name: m.name,
+                    hours: type === 'weekly' ? Math.floor(Math.random() * 20) + 20 : Math.floor(Math.random() * 80) + 120,
+                    change: Math.floor(Math.random() * 10) - 5
+                })).sort((a, b) => b.hours - a.hours).map((item, index) => ({ ...item, rank: index + 1 }));
+            };
+
+            const [data, setData] = useState({
+                weekly: generateData('weekly'),
+                monthly: generateData('monthly')
+            });
+
+            const currentData = data[activeTab];
+
+            return (
+                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 className="font-bold text-slate-900 text-lg">근무 통계</h3>
+                        <div className="bg-slate-200 p-1 rounded-xl flex text-xs font-bold">
+                            <button
+                                onClick={() => setActiveTab('weekly')}
+                                className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'weekly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                주간
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('monthly')}
+                                className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                월간
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-500 font-medium text-xs sticky top-0">
+                                <tr>
+                                    <th className="px-6 py-3 font-semibold w-16 text-center">순위</th>
+                                    <th className="px-6 py-3 font-semibold">이름</th>
+                                    <th className="px-6 py-3 font-semibold text-right">근무 시간</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {currentData.map((item) => (
+                                    <tr key={item.name} className="hover:bg-slate-50/80 transition-colors">
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${item.rank === 1 ? 'bg-amber-100 text-amber-700' :
+                                                    item.rank === 2 ? 'bg-slate-200 text-slate-700' :
+                                                        item.rank === 3 ? 'bg-orange-100 text-orange-800' :
+                                                            'text-slate-400'
+                                                }`}>
+                                                {item.rank}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{item.name}</td>
+                                        <td className="px-6 py-4 text-right tabular-nums">
+                                            <span className="font-bold text-slate-700">{item.hours}h</span>
+                                            <span className={`text-[10px] ml-1.5 font-bold ${item.change > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {item.change > 0 ? '▲' : '▼'} {Math.abs(item.change)}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
         const MemberCard = ({ member, onStatusChange }) => {
             const getStatusColor = (status) => {
                 switch (status) {
@@ -144,43 +221,50 @@
             };
 
             return (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col gap-4">
-                    <div className="flex items-center gap-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-3 transition-all duration-300 hover:shadow-md hover:border-indigo-100 flex flex-col gap-3">
+                    {/* Top Row: Avatar & Info */}
+                    <div className="flex items-center gap-3">
                         <div className="relative">
-                            <img src={member.avatar} alt={member.name} className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-50" />
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`}></div>
+                            {/* Reduced Avatar Size: w-14 -> w-10 */}
+                            <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-50" />
+                            <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${getStatusColor(member.status)}`}></div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-slate-900 truncate">{member.name}</h3>
-                            <p className="text-xs text-slate-500 truncate">{member.role}</p>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            {/* Name visibility improved: text-sm, break-keep, tracking-tight. Removed truncate for name. */}
+                            <h3 className="font-bold text-slate-900 text-sm tracking-tight break-keep leading-tight">
+                                {member.name}
+                            </h3>
+                            <p className="text-[10px] text-slate-500 truncate leading-tight mt-0.5">{member.role}</p>
                         </div>
-                        <div className={`px-2 py-1 rounded-md text-xs font-semibold ${getStatusTextClass(member.status)}`}>
+                        {/* Status Badge */}
+                        <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold flex-shrink-0 ${getStatusTextClass(member.status)}`}>
                             {member.status}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    {/* Action Buttons: Compact Grid */}
+                    <div className="grid grid-cols-2 gap-1.5 mt-1">
                         <button
                             onClick={() => onStatusChange(member.id, AttendanceStatus.AT_WORK)}
-                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors font-medium"
+                            className="text-[10px] py-1.5 px-1 rounded-lg border border-slate-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors font-medium flex items-center justify-center whitespace-nowrap"
                         >
                             출근
                         </button>
                         <button
                             onClick={() => onStatusChange(member.id, AttendanceStatus.OFF)}
-                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors font-medium"
+                            className="text-[10px] py-1.5 px-1 rounded-lg border border-slate-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors font-medium flex items-center justify-center whitespace-nowrap"
                         >
                             퇴근
                         </button>
                         <button
                             onClick={() => onStatusChange(member.id, AttendanceStatus.AWAY)}
-                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-colors font-medium"
+                            className="text-[10px] py-1.5 px-1 rounded-lg border border-slate-200 hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-colors font-medium flex items-center justify-center whitespace-nowrap"
                         >
                             외출
                         </button>
                         <button
                             onClick={() => onStatusChange(member.id, AttendanceStatus.BREAK)}
-                            className="text-xs py-2 px-3 rounded-lg border border-slate-200 hover:bg-sky-500 hover:text-white hover:border-sky-500 transition-colors font-medium"
+                            className="text-[10px] py-1.5 px-1 rounded-lg border border-slate-200 hover:bg-sky-500 hover:text-white hover:border-sky-500 transition-colors font-medium flex items-center justify-center whitespace-nowrap"
                         >
                             휴식
                         </button>
@@ -188,7 +272,7 @@
 
                     {member.records.checkIn && (
                         <div className="text-[10px] text-slate-400 text-center border-t pt-2 mt-1">
-                            최근 체크인: {member.records.checkIn}
+                            {member.records.checkIn}
                         </div>
                     )}
                 </div>
@@ -244,7 +328,7 @@
 
             return (
                 <div className="min-h-screen bg-slate-50 pb-12 transition-all">
-                    <header className="sticky top-0 z-10 glass-morphism border-b border-slate-200 px-6 py-4 mb-8">
+                    <header className="sticky top-0 z-50 glass-morphism border-b border-slate-200 px-6 py-4 mb-8">
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -262,26 +346,29 @@
                     </header>
 
                     <main className="max-w-7xl mx-auto px-6 space-y-8">
-                        {/* Status Summary */}
-                        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                                <p className="text-slate-500 text-sm font-medium mb-1">근무 중인 팀원</p>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-3xl font-black text-emerald-600">{totalAtWork}</span>
-                                    <span className="text-slate-400 mb-1 font-medium">/ 10명</span>
+                        {/* Status Summary & Insight */}
+                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                    <p className="text-slate-500 text-sm font-medium mb-1">근무 중</p>
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-4xl font-black text-emerald-600">{totalAtWork}</span>
+                                        <span className="text-slate-400 mb-1 font-medium">/ 10</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                                <p className="text-slate-500 text-sm font-medium mb-1">자리비움/휴식</p>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-3xl font-black text-amber-500">{totalAway}</span>
-                                    <span className="text-slate-400 mb-1 font-medium">명</span>
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                    <p className="text-slate-500 text-sm font-medium mb-1">부재중</p>
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-4xl font-black text-amber-500">{totalAway}</span>
+                                        <span className="text-slate-400 mb-1 font-medium">명</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* AI Insight Box */}
-                            <div className="col-span-1 sm:col-span-2 bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden group">
-                                <div className="relative z-10">
+                            {/* AI Insight (Span 2 cols on Large screens) */}
+                            <div className="lg:col-span-2 bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden group">
+                                <div className="relative z-10 h-full flex flex-col justify-center">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -302,11 +389,11 @@
                                         </button>
                                     </div>
                                     {insight ? (
-                                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-700">
                                             <p className="text-sm font-bold leading-tight">{insight.summary}</p>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 mt-1">
                                                 <span className="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-medium">{insight.mood}</span>
-                                                <p className="text-xs opacity-90 italic">"{insight.tip}"</p>
+                                                <p className="text-xs opacity-90 italic truncate">"{insight.tip}"</p>
                                             </div>
                                         </div>
                                     ) : (
@@ -317,25 +404,33 @@
                             </div>
                         </section>
 
-                        {/* Members Grid */}
-                        <section>
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">팀원 근무 현황</h2>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Real-time status</span>
+                        {/* Main Content: Members (Left) + Stats Table (Right) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left Column: Member Grid */}
+                            <section className="lg:col-span-2">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">팀원 현황</h2>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Live</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-                                {members.map(member => (
-                                    <MemberCard
-                                        key={member.id}
-                                        member={member}
-                                        onStatusChange={handleStatusChange}
-                                    />
-                                ))}
-                            </div>
-                        </section>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {members.map(member => (
+                                        <MemberCard
+                                            key={member.id}
+                                            member={member}
+                                            onStatusChange={handleStatusChange}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Right Column: Stats Table */}
+                            <section className="lg:col-span-1 h-full min-h-[500px]">
+                                <StatsTable />
+                            </section>
+                        </div>
                     </main>
 
                     <footer className="mt-20 border-t border-slate-200 pt-8 pb-12 text-center px-6">
